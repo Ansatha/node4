@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+let cors = require('cors');
 
 class Professional {
 
@@ -74,6 +75,7 @@ function getProfIdByName (arrayProf, name) {
     return index;
 };
 
+app.use(cors());
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 app.use((request, respond, next) =>
@@ -89,13 +91,13 @@ app.get('/professionals', (request, response) => {
     if (arrayProfessionals.length == 0)
     {
         answer = {error: true, code: 200,
-                  msg: 'No professionals registered.',
+                  msg: 'No professionals => Empty DDBB.',
                   prof: arrayProfessionals};
     }
     else
     {
         answer = {error: false, code: 200,
-                  msg: 'professional registered',
+                  msg: arrayProfessionals.length + ' professionals registered',
                   prof: arrayProfessionals};
     };
     console.log('Client request:', request.method,
@@ -110,7 +112,7 @@ app.get('/professionals/:id', (request, response) => {
         request.params.id == 0)
     {
         answer = {error: true, code: 200,
-                  msg: 'Professional not registered.',
+                  msg: 'Not found => Wrong id.',
                   prof: 'Total ids: ' + arrayProfessionals.length};
     }
     else
@@ -128,17 +130,22 @@ app.post('/professionals', (request, response) =>
 {
     let answer;
     profId = getProfIdByName(arrayProfessionals, request.body.name);
-    if (profId == -1)
+    if (profId == -1 && request.body.name !== "")
     {
         arrayProfessionals.push(constructProfessional(request.body));
         answer        = {error: false, code: 200,
                         msg: 'New professional created:',
                         prof: arrayProfessionals[arrayProfessionals.length-1]};
     }
+    else if (request.body.name == "" || request.body.profession == [""] || request.body.profession == "") {
+        answer        = {error: true, code: 200,
+                        msg: 'Not created => Missing key information.',
+                        prof: arrayProfessionals};
+    }
     else
     {
         answer        = {error: true, code: 200,
-                        msg: 'Professional already exists',
+                        msg: 'Not created => Already exists',
                         prof: arrayProfessionals[profId]};
     }
     console.log('Client request:', request.method,
@@ -149,18 +156,19 @@ app.post('/professionals', (request, response) =>
 app.put('/professionals', (request, response) =>
 {
     let answer;
-    profId = getProfIdByName(arrayProfessionals, request.body.name);
-    if (profId !== -1)
+    profId = request.body.id;
+    if (profId != undefined && profId != null && profId != "" && profId > 0)
     {
         for (let featToChange in request.body) {
-            arrayProfessionals[profId][featToChange] = request.body[featToChange];
+            arrayProfessionals[profId-1][featToChange] = request.body[featToChange];
         }
         answer = {error: false, code: 200, msg: 'Professional data updated.',
-        prof: arrayProfessionals[profId]};
+        prof: arrayProfessionals[profId-1]};
     }
     else
     {
-        answer = {error: true, code: 200, msg: 'Professional not registered.'};
+        answer = {error: true, code: 200, msg: 'Not updated => Wrong id.',
+        prof: arrayProfessionals};
     };
     console.log('Client request:', request.method,
     '=> Server response status:', response.statusCode);
@@ -170,16 +178,16 @@ app.put('/professionals', (request, response) =>
 app.delete('/professionals', (request, response) =>
 {
     let answer;
-    profId = getProfIdByName(arrayProfessionals, request.body.name);
-    if (profId !== -1)
+    profId = request.body.id;
+    if (profId != undefined && profId != null && profId != "" && profId > 0)
     {
-        arrayProfessionals.splice(profId, 1);
+        arrayProfessionals.splice(profId-1, 1);
         answer        = {error: false, code: 200, msg: 'Professional deleted.',
                         prof: arrayProfessionals};
     }
     else
     {
-        answer        = {error: true, code: 200, msg: 'Professional not found.',
+        answer        = {error: true, code: 200, msg: 'Not deleted => Wrong id.',
                         prof: arrayProfessionals};
     };
     console.log('Client request:', request.method,
